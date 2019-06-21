@@ -2,7 +2,7 @@ import React from "react";
 import { Image, View, ActivityIndicator, FlatList } from "react-native";
 import * as firebase from "firebase";
 import { connect } from "react-redux";
-import { setLoggingIn, watchPublicPolls } from "../redux/app-redux";
+import { setLoggingIn, getPublicPollsList } from "../redux/app-redux";
 import { Header, Container, Content, Text, Button, List } from "native-base";
 import HomeHeader from "../components/common/HomeHeader";
 import PollCard from "../components/poll/pollcard";
@@ -21,8 +21,8 @@ const mapDispatchToProps = dispatch => {
     setLoggingIn: logging => {
       dispatch(setLoggingIn(logging));
     },
-    watchPublicPolls: () => {
-      dispatch(watchPublicPolls());
+    getPublicPollsList: () => {
+      dispatch(getPublicPollsList());
     }
   };
 };
@@ -35,7 +35,7 @@ class HomeScreen extends React.Component {
       pollsdata: [],
       isRefreshing: false,
     };
-    this.props.watchPublicPolls();
+    this.props.getPublicPollsList();
   }
 
   componentDidMount() {
@@ -69,7 +69,7 @@ class HomeScreen extends React.Component {
             renderItem={this._renderRow}
             refreshing={this.props.refreshingPublicPolls}
             onRefresh={()=>{
-              this.props.watchPublicPolls();
+              this.props.getPublicPollsList();
             }}
             keyExtractor={item => item.id.toString()}
             extraData={this.state}

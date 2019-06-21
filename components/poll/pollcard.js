@@ -27,7 +27,7 @@ import { Col, Row, Grid } from "react-native-easy-grid";
 import ProgressBarAnimated from "react-native-progress-bar-animated";
 import * as firebase from "firebase";
 import { connect } from "react-redux";
-import { watchPublicPolls } from "../../redux/app-redux";
+import { getPublicPollsList } from "../../redux/app-redux";
 const barColor = "#29a1a3";
 
 class pollCard extends Component {
@@ -78,7 +78,6 @@ class pollCard extends Component {
     Promise.all(promises).then(
       ()=>{
         alert("voted!");
-        this.props.watchPublicPolls();
       }
     ).catch((error)=>{
       console.log(error);
@@ -407,8 +406,8 @@ const mapStateToProps = state => {
 
 const mapDispatchToProps = dispatch => {
   return {
-    watchPublicPolls: () => {
-      dispatch(watchPublicPolls());
+    getPublicPollsList: () => {
+      dispatch(getPublicPollsList());
     }
   };
 };

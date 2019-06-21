@@ -7,6 +7,7 @@ import * as firebase from "firebase";
 const InitialState = {
     loggingIn: false,
     publicPolls: [],
+    publicPollsRef: [],
     refreshingPublicPolls: false,
 };
 
@@ -18,6 +19,8 @@ const reducer = (state = InitialState, action) => {
             return { ...state, loggingIn: action.value };
         case "setPublicPolls":
             return { ...state, publicPolls: action.value };
+        case "setPublicPollsRef":
+            return { ...state, publicPollsRef: action.value };
         case "setRefreshingPublicPolls":
             return { ...state, refreshingPublicPolls: action.value };
         default: return state;
@@ -39,10 +42,17 @@ const setLoggingIn = (logging) => {
     }
 }
 
-const setPublicPolls = (publicpolls) => {
+const setPublicPolls = (publicPolls) => {
     return {
         type: "setPublicPolls",
-        value: publicpolls,
+        value: publicPolls,
+    }
+}
+
+const setPublicPollsRef = (publicPollsRef) => {
+    return {
+        type: "setPublicPollsRef",
+        value: publicPollsRef,
     }
 }
 
@@ -53,44 +63,54 @@ const setRefreshingPublicPolls = (refreshing) => {
     }
 }
 
-
-
 const watchPublicPolls = () => {
-    return function (dispatch) {
-        dispatch(setRefreshingPublicPolls(true));
-        var pollsdata = [];
-        var db = firebase.firestore();
-        db.collection("polls").get().then((querySnapshot) => {
-            var promises = [];
-            querySnapshot.forEach((doc) => {
+    return (dispatch, getState) => {
+        //console.log(getState().publicPollsRef[0]);
+        getState().publicPollsRef.forEach((ref) => {
+            ref.onSnapshot((doc) => {
+                var db = firebase.firestore();
                 var data = doc.data();
                 data.id = doc.id;
                 data.authorName = "unknown";
                 var docRef = db.collection("users").doc(doc.data().author);
-                promises.push(docRef.get().then((userdoc) => {
+                docRef.get().then((userdoc) => {
                     if (userdoc.exists) {
                         data.authorName = userdoc.data().displayName;
                         data.photoURL = userdoc.data().photoURL;
-                        pollsdata.push(data);
+                        //add or replace
+                        var pollsdata = getState().publicPolls;
+                        const i = pollsdata.findIndex(_item => _item.id === data.id);
+                        if (i > -1) pollsdata[i] = data; 
+                        else pollsdata.push(data);
+                        dispatch(setPublicPolls(pollsdata));
+
+                        console.log(getState().publicPolls);
                     }
                 }
-                ).catch((error)=>{
+                ).catch((error) => {
                     console.log(error);
-                }));
-            })
-            Promise.all(promises).then(
-                ()=>{
-                  dispatch(setPublicPolls(pollsdata));
-                  dispatch(setRefreshingPublicPolls(false));
-                }
-              ).catch((error)=>{
-                console.log(error);
-              })
+                });
+            });
+        })
+    }
+}
 
+const getPublicPollsList = () => {
+    return function (dispatch) {
+        dispatch(setRefreshingPublicPolls(true));
+        var db = firebase.firestore();
+        var Refs = [];
+        db.collection("polls").get().then((querySnapshot) => {
+            querySnapshot.forEach((doc) => {
+                Refs.push(doc.ref);
+            })
+            dispatch(setPublicPollsRef(Refs));
+            dispatch(watchPublicPolls());
+            dispatch(setRefreshingPublicPolls(false));
         }).catch((error) => {
             console.log(error);
         });
     }
 }
 
-export { setLoggingIn, setPublicPolls, watchPublicPolls };
+export { setLoggingIn, setPublicPolls, getPublicPollsList };
